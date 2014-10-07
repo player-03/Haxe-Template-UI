@@ -1,0 +1,10 @@
+{
+	"name": "TemplateUI",
+	"url": "https://github.com/player-03/Haxe-Template-UI",
+	"license": "MIT",
+	"tags": [],
+	"description": "A basic utility for testing Haxe's templates.",
+	"version": "1.0.1",
+	"contributors": [ "player_03" ],
+	"dependencies": { "hscript":"" }
+}

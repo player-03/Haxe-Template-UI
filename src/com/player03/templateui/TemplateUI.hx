@@ -25,17 +25,25 @@
 package com.player03.templateui;
 
 import haxe.Json;
+import haxe.Log;
+import haxe.PosInfos;
 import haxe.Template;
+import hscript.exec.Interp;
+import hscript.Expr;
+import hscript.Parser;
 import openfl.Assets;
 import openfl.display.Bitmap;
 import openfl.display.Sprite;
 import openfl.display.Stage;
+import openfl.events.FocusEvent;
+import openfl.events.KeyboardEvent;
 import openfl.events.MouseEvent;
 import openfl.Lib;
 import openfl.text.TextField;
 import openfl.text.TextFieldType;
 import openfl.text.TextFormat;
 import openfl.text.TextFormatAlign;
+import openfl.ui.Keyboard;
 
 /**
  * @author Joseph Cloutier
@@ -45,6 +53,7 @@ class TemplateUI extends Sprite {
 	
 	private var sourceInput:TextField;
 	private var contextInput:TextField;
+	private var macroInput:TextField;
 	private var outputText:TextField;
 	
 	public function new() {
@@ -75,22 +84,50 @@ class TemplateUI extends Sprite {
 		sourceInput.y = sourceHeader.height + MARGIN;
 		sourceInput.width = arrowButton.x - MARGIN * 2;
 		sourceInput.height = horizontalDivider - sourceInput.y - MARGIN * 2;
-		sourceInput.text = "Hello, ::sampleVar::.";
+		sourceInput.text = StringTools.replace(Assets.getText("text/DefaultTemplate.txt"),
+								"\r\n", "\n");
 		addChild(sourceInput);
 		
 		var contextHeader:TextField = newStaticText();
+		contextHeader.x = MARGIN;
 		contextHeader.y = horizontalDivider;
-		contextHeader.width = arrowButton.x;
 		contextHeader.text = "Context";
+		contextHeader.width = contextHeader.textWidth * 1.1;
 		addChild(contextHeader);
+		
+		var macroHeader:TextField = newStaticText();
+		macroHeader.y = horizontalDivider;
+		macroHeader.text = "Macro";
+		macroHeader.width = macroHeader.textWidth * 1.1;
+		macroHeader.x = arrowButton.x - MARGIN - macroHeader.width;
+		addChild(macroHeader);
 		
 		contextInput = newInputText();
 		contextInput.x = MARGIN;
 		contextInput.y = contextHeader.y + contextHeader.height + MARGIN;
 		contextInput.width = arrowButton.x - MARGIN * 2;
 		contextInput.height = stageHeight - contextInput.y - MARGIN * 2;
-		contextInput.text = "sampleVar = world\nt = 0";
+		contextInput.text = StringTools.replace(Assets.getText("text/DefaultContext.txt"),
+								"\r\n", "\n");
 		addChild(contextInput);
+		
+		macroInput = newInputText();
+		macroInput.x = contextInput.x;
+		macroInput.y = contextInput.y;
+		macroInput.width = contextInput.width;
+		macroInput.height = contextInput.height;
+		macroInput.text = StringTools.replace(Assets.getText("text/DefaultMacros.txt"),
+							"\r\n", "\n");
+		addChild(macroInput);
+		
+		var tabList:Array<HeaderTab> = new Array<HeaderTab>();
+		var contextTab:HeaderTab = new HeaderTab(contextHeader, tabList, contextInput);
+		tabList.push(contextTab);
+		contextTab.selectTab();
+		addChild(contextTab);
+		var macroTab:HeaderTab = new HeaderTab(macroHeader, tabList, macroInput);
+		tabList.push(macroTab);
+		addChild(macroTab);
 		
 		var outputHeader:TextField = newStaticText();
 		outputHeader.x = arrowButton.x + arrowButton.width;
@@ -104,23 +141,89 @@ class TemplateUI extends Sprite {
 		outputText.width = stageWidth - outputText.x - MARGIN * 2;
 		outputText.height = stageHeight - outputText.y - MARGIN * 2;
 		addChild(outputText);
+		
+		stage.addEventListener(FocusEvent.KEY_FOCUS_CHANGE, onKeyFocusChange);
+		stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+	}
+	
+	private function onKeyFocusChange(e:FocusEvent):Void {
+		e.stopImmediatePropagation();
+		e.preventDefault();
+	}
+	
+	private function onKeyDown(e:KeyboardEvent):Void {
+		if(e.keyCode == Keyboard.ENTER && e.ctrlKey || e.keyCode == Keyboard.F5) {
+			e.stopImmediatePropagation();
+			e.preventDefault();
+			
+			onClick(null);
+		} else if(e.keyCode == Keyboard.TAB) {
+			e.stopImmediatePropagation();
+			e.preventDefault();
+			
+			if(Std.is(stage.focus, TextField)) {
+				var t:TextField = cast(stage.focus, TextField);
+				if(t.type == TextFieldType.INPUT) {
+					t.replaceText(t.selectionBeginIndex, t.selectionEndIndex, "\t");
+					t.setSelection(t.selectionBeginIndex + 1, t.selectionBeginIndex + 1);
+				}
+			}
+		}
+	}
+	
+	private function traceToOutput(v:Dynamic, ?infos:PosInfos):Void {
+		outputText.appendText(infos.fileName + ":" + infos.lineNumber + ": "
+							+ Std.string(v) + "\n");
 	}
 	
 	private function onClick(e:MouseEvent):Void {
-		var template:Template = new Template(sourceInput.text);
-		var context:Dynamic = { };
-		var delim:EReg = ~/[ =:]+/i;
-		for(line in ~/[\r\n]+/.split(contextInput.text)) {
-			if(line.length == 0) {
-				continue;
+		Log.trace = traceToOutput;
+		outputText.text = "";
+		
+		try {
+			var template:Template = new Template(sourceInput.text);
+			
+			var context:Dynamic = { };
+			var delim:EReg = ~/[ =:]+/i;
+			for(line in ~/[\r\n]+/.split(contextInput.text)) {
+				if(line.length == 0) {
+					continue;
+				}
+				if(delim.match(line)) {
+					Reflect.setField(context, delim.matchedLeft(), delim.matchedRight());
+				} else {
+					Reflect.setField(context, line, 1);
+				}
 			}
-			if(delim.match(line)) {
-				Reflect.setField(context, delim.matchedLeft(), delim.matchedRight());
+			
+			var macros:Dynamic = { };
+			if(macroInput.text.length > 0) {
+				var parser:Parser = new Parser();
+				var interp:Interp = new Interp();
+				addToMacros(macros, parser.parseString(macroInput.text), interp);
+			}
+			
+			outputText.appendText(template.execute(context, macros));
+		} catch(e:Dynamic) {
+			if(Std.is(e, hscript.Expr.Error)) {
+				outputText.appendText(Std.string(cast(e, hscript.Expr.Error).error));
 			} else {
-				Reflect.setField(context, line, 1);
+				outputText.appendText(Std.string(e));
 			}
 		}
-		outputText.text = template.execute(context);
+	}
+	
+	private static function addToMacros(macros:Dynamic, expr:Expr, interp:Interp):Void {
+		switch(expr.expr) {
+			case EFunction(args, expr2, name, ret):
+				Reflect.setField(macros, name,
+					MacroExecution.getMacroExecutor(name, expr2, interp, args));
+			case EBlock(arr):
+				for(expr2 in arr) {
+					addToMacros(macros, expr2, interp);
+				}
+			default:
+		}
 	}
 	
 	private static function newInputText():TextField {

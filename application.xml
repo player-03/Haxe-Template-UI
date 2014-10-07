@@ -16,11 +16,13 @@
 	<source path="src" />
 	<haxelib name="openfl" />
 	<haxelib name="actuate" />
+	<haxelib name="hscript" />
 	
 	<!-- assets -->
 	<icon path="assets/openfl.svg" />
 	<assets path="assets/img" rename="img" />
 	<assets path="assets/font" rename="font" />
+	<assets path="assets/text" rename="text" />
 	
 	<!-- optimize output
 	<haxeflag name="-dce full" /> -->

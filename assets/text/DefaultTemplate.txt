@@ -1,0 +1,5 @@
+::if (t == 0)::
+$$regexReplace(\?,::sampleVar::,l)
+::else::
+::sampleVar::
+::end::

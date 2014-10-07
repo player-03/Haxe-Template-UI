@@ -1,0 +1,8 @@
+function regexMatch(resolve:String -> Dynamic, regex:String, string:String):Bool {
+	var ereg:EReg = new EReg(regex, "");
+	return ereg.match(string);
+}
+function regexReplace(resolve:String -> Dynamic, regex:String, string:String, replacement:String):String {
+	var ereg:EReg = new EReg(regex, "g");
+	return ereg.split(string).join(replacement);
+}
