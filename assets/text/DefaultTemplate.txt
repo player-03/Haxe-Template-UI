@@ -1,5 +1,7 @@
 ::if (t == 0)::
 $$regexReplace(\?,::sampleVar::,l)
-::else::
+::elseif (t == 1)::
 ::sampleVar::
+
+$$includeIf($$regexMatch(w,::sampleVar::),"::sampleVar::" contains "w",)
 ::end::
