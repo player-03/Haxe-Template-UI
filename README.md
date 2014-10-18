@@ -1,9 +1,16 @@
 Haxe Template UI
 ================
 
+[About templates in Haxe](http://old.haxe.org/doc/cross/template)
+
 [Try it online](http://www.fastswf.com/N5GSsRU)!
 
-[About templates in Haxe](http://old.haxe.org/doc/cross/template)
+Things to try
+-------------
+
+# Click the arrow and note the output. Currently only the "$$regexReplace" section is being included in the output.
+# Change "`t = 0`" to "`t = 1`", click the arrow, and observe the difference. Now it's including everything after line 3 of the template.
+# Remove the "w" from "`wor?d`". Now only the middle line gets included, thanks to the "$$includeIf" macro.
 
 Notes
 -----
