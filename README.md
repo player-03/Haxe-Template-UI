@@ -3,7 +3,7 @@ Haxe Template UI
 
 [About templates in Haxe](http://old.haxe.org/doc/cross/template)
 
-[Try it online](http://www.fastswf.com/N5GSsRU)!
+[Try it online](http://www.fastswf.com/9zjdVEw)!
 
 Things to try
 -------------
