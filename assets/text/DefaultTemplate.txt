@@ -3,5 +3,7 @@ $$regexReplace(\?,::sampleVar::,l)
 ::elseif (t == 1)::
 ::sampleVar::
 
-$$includeIf($$regexMatch(w,::sampleVar::),"::sampleVar::" contains "w",)
+$$includeIf($$regexMatch(w,::sampleVar::),
+"::sampleVar::" contains "w",
+)
 ::end::
