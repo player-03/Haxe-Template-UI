@@ -28,7 +28,7 @@ import haxe.Json;
 import haxe.Log;
 import haxe.PosInfos;
 import haxe.Template;
-import hscript.exec.Interp;
+import hscript.Interp;
 import hscript.Expr;
 import hscript.Parser;
 import openfl.Assets;
@@ -185,7 +185,8 @@ class TemplateUI extends Sprite {
 			
 			var context:Dynamic = { };
 			var delim:EReg = ~/[ =:]+/i;
-			for(line in ~/[\r\n]+/.split(contextInput.text)) {
+			var contextText:String = StringTools.replace(contextInput.text, "\r", "\n");
+			for(line in contextText.split("\n")) {
 				if(line.length == 0) {
 					continue;
 				}
@@ -199,22 +200,19 @@ class TemplateUI extends Sprite {
 			var macros:Dynamic = { };
 			if(macroInput.text.length > 0) {
 				var parser:Parser = new Parser();
+				parser.allowTypes = true;
 				var interp:Interp = new Interp();
 				addToMacros(macros, parser.parseString(macroInput.text), interp);
 			}
 			
 			outputText.appendText(template.execute(context, macros));
 		} catch(e:Dynamic) {
-			if(Std.is(e, hscript.Expr.Error)) {
-				outputText.appendText(Std.string(cast(e, hscript.Expr.Error).error));
-			} else {
-				outputText.appendText(Std.string(e));
-			}
+			outputText.appendText(Std.string(e));
 		}
 	}
 	
 	private static function addToMacros(macros:Dynamic, expr:Expr, interp:Interp):Void {
-		switch(expr.expr) {
+		switch(expr) {
 			case EFunction(args, expr2, name, ret):
 				Reflect.setField(macros, name,
 					MacroExecution.getMacroExecutor(name, expr2, interp, args));

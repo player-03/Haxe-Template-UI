@@ -23,7 +23,7 @@
  */
 
 package com.player03.templateui;
-import hscript.exec.Interp;
+import hscript.Interp;
 import hscript.Expr;
 
 /**

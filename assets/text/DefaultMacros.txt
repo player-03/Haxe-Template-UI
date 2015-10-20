@@ -4,7 +4,15 @@ function regexMatch(resolve:String -> Dynamic, regex:String, string:String):Bool
 }
 function regexReplace(resolve:String -> Dynamic, regex:String, string:String, replacement:String):String {
 	var ereg:EReg = new EReg(regex, "g");
-	return ereg.split(string).join(replacement);
+	var out:String = "";
+	
+	while(ereg.match(string)) {
+		out += ereg.matchedLeft();
+		out += replacement;
+		string = ereg.matchedRight();
+	}
+	
+	return out + string;
 }
 function includeIf(resolve:String -> Dynamic, condition:String, resultIf:String, resultElse:String):String {
 	if(condition == "true") {
